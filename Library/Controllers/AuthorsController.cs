@@ -40,9 +40,9 @@ namespace Library.Controllers
             {
                 return NotFound();
             }
-            if (BooksController.Books != null)
+            if (BooksController.BooksToSave != null)
             {
-                foreach (var book in BooksController.Books)
+                foreach (var book in BooksController.BooksToSave)
                 {
                     author.Books.Add(book);
                 }

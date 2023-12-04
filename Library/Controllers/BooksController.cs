@@ -20,7 +20,7 @@ namespace Library.Controllers
     public class BooksController : Controller
     {
         private static List<Book> books = new List<Book>();
-        public static List<Book> Books
+        public static List<Book> BooksToSave
         {
             get { return books; }
         }
@@ -98,7 +98,7 @@ namespace Library.Controllers
         }
 
         // GET: Books/Create
-        public async Task<IActionResult> Create()
+        public IActionResult Create()
         {
             return View();
         }
@@ -115,7 +115,7 @@ namespace Library.Controllers
             {
                 _context.Add(book);
                 await _context.SaveChangesAsync();
-                return Redirect("/Authors/Details/" + fromDb.AuthorID.ToString());
+                return Redirect("/Authors/Details/" + fromDb?.AuthorID.ToString());
             }
             return View(book);
         }
@@ -123,7 +123,6 @@ namespace Library.Controllers
         // GET: Books/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
-            TempData["Author"] = TempData["Author"];
             if (id == null || _context.Books == null)
             {
                 return NotFound();
@@ -175,19 +174,7 @@ namespace Library.Controllers
         // GET: Books/Delete/5
         public async Task<IActionResult> Delete(int? id)
         {
-            if (id == null || _context.Books == null)
-            {
-                return NotFound();
-            }
-
-            var book = await _context.Books.Include(b => b.Author)
-                .FirstOrDefaultAsync(m => m.Id == id);
-            if (book == null)
-            {
-                return NotFound();
-            }
-
-            return View(book);
+            return await Details(id);
         }
 
         // POST: Books/Delete/5
