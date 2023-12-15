@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Library.Data;
 using Library.Models;
 using Newtonsoft.Json;
+using NuGet.Packaging;
 
 namespace Library.Controllers
 {
@@ -36,23 +37,21 @@ namespace Library.Controllers
 
             var author = await _context.Authors.Include(a => a.Books).ThenInclude(b => b.Genre)
                 .FirstOrDefaultAsync(m => m.AuthorID == id);
-            if (author == null)
+
+            if (author is null)
             {
                 return NotFound();
             }
-            if (BooksController.BooksToSave != null)
+
+            if (TempData["data"] != null)
             {
-                foreach (var book in BooksController.BooksToSave)
-                {
-                    author.Books.Add(book);
-                }
+                List<Book>? books = JsonConvert.DeserializeObject<List<Book>>(TempData["data"].ToString());
+                author.Books.AddRange(books);
+                TempData.Keep("data");
             }
+
             TempData["Author"] = JsonConvert.SerializeObject(author);
-            if (BooksController.SaveState)
-            {
-                ViewBag.Status = BooksController.SaveState;
-                BooksController.SaveState = false;
-            }
+
             var genres = _context.Genres.Select(g => new SelectListItem() { Text = g.Name }).ToList();
             return View(new Tuple<Author, Book, List<SelectListItem>>(author, new Book(), genres));
         }

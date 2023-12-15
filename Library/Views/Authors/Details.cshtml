@@ -90,7 +90,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Добавление книги</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <button type="button" class="btn-close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
@@ -122,7 +122,7 @@
 <form method="post" asp-controller="Books" asp-action="Save">
     <input type="submit" value="Сохранить" class="btn btn-primary" />
 </form>
-@if (ViewBag.Status != null)
+@if (TempData["saveStatus"] != null && (bool)TempData["saveStatus"] == true)
 {
     <p>Книги сохранены</p>
 }

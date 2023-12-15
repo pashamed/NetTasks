@@ -19,12 +19,6 @@ namespace Library.Controllers
 {
     public class BooksController : Controller
     {
-        private static List<Book> books = new List<Book>();
-        public static List<Book> BooksToSave
-        {
-            get { return books; }
-        }
-        public static bool SaveState = false;
         private readonly LibraryContext _context;
         private Author _currentAuthor;
 
@@ -41,20 +35,24 @@ namespace Library.Controllers
         //Action: Save Books
         public async Task<IActionResult> Save()
         {
-            SaveState = false;
             var fromDb = await _context.Authors.FirstOrDefaultAsync(m => m.AuthorID == _currentAuthor.AuthorID);
-            if (books.Any())
+            if (TempData["data"] != null)
             {
-                foreach(var book in books)
+                List<Book>? books = JsonConvert.DeserializeObject<List<Book>>(TempData["data"].ToString());
+                foreach (var book in books)
                 {
                     book.Author = fromDb;
                     book.Genre = _context.Genres.FirstOrDefault(m => m.Name == book.Genre.Name);
                     _context.Books.Add(book);
-                }
-                books.Clear();
-                await _context.SaveChangesAsync();
-                SaveState = true;
-            }           
+                }              
+            }
+
+            if(await _context.SaveChangesAsync() > 0)
+            {
+                TempData.Remove("data");
+                TempData["saveStatus"] = true;
+            }
+
             return Redirect("/Authors/Details/" + fromDb.AuthorID.ToString());
         }
 
@@ -73,7 +71,19 @@ namespace Library.Controllers
             book.Author = fromDb;
             if (ModelState.IsValid)
             {
-                books.Add(book);
+                if (TempData["data"] != null)
+                {
+                    List<Book>? books = JsonConvert.DeserializeObject<List<Book>>(TempData["data"].ToString());
+                    books.Add(book);
+                    TempData["data"] = JsonConvert.SerializeObject(books);
+                    TempData.Keep("data");
+                }
+                else
+                {
+                    TempData["data"] = JsonConvert.SerializeObject(new List<Book> { book });
+                    TempData.Keep("data");
+                }
+                TempData["saveStatus"] = false;
                 return Redirect("/Authors/Details/" + book.Author?.AuthorID.ToString());
             }
             return Problem("Нету книг для сохранения.");
@@ -128,13 +138,13 @@ namespace Library.Controllers
                 return NotFound();
             }
 
-            var book = await _context.Books.Include(b => b.Author).Where(b=> b.Id == id).FirstOrDefaultAsync();
+            var book = await _context.Books.Include(b => b.Author).Where(b => b.Id == id).FirstOrDefaultAsync();
             if (book == null)
             {
                 return NotFound();
             }
             var genres = _context.Genres.Select(g => new SelectListItem() { Text = g.Name }).ToList();
-            return View(new Tuple <Book, List<SelectListItem>>(book,genres));
+            return View(new Tuple<Book, List<SelectListItem>>(book, genres));
         }
 
         // POST: Books/Edit/5
@@ -167,7 +177,7 @@ namespace Library.Controllers
                 }
                 return Redirect("/Authors/Details/" + _currentAuthor.AuthorID);
             }
-           
+
             return View(book);
         }
 
@@ -193,7 +203,7 @@ namespace Library.Controllers
             }
 
             await _context.SaveChangesAsync();
-            return Redirect("/Authors/Details/"+book.Author.AuthorID);
+            return Redirect("/Authors/Details/" + book.Author.AuthorID);
         }
 
         private bool BookExists(int id)
